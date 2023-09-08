@@ -31,6 +31,21 @@ async def post_config(
         db[integration.company_id] = company_data
 
 
+@app.delete("/integration_configs/{integration_name}/{integration_id}")
+async def delete_config(
+    integration_name: str,
+    integration_id: str,
+) -> None:
+    with shelve.open(DATABASE_PATH) as db:
+        for company_id, integrations in db.items():
+            if (integration := integrations.get(integration_name)) and integration['integration_id'] == integration_id:
+                new_integrations = deepcopy(integrations)
+                new_integrations.pop(integration_name)
+                db[company_id] = new_integrations
+                return
+    raise HTTPException(status_code=404, detail="Item not found")
+
+
 @app.get("/integration_configs/{integration_name}/{integration_id}")
 async def retrive_config(
     integration_name: str,
