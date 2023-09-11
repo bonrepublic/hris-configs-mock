@@ -2,7 +2,7 @@ import shelve
 from copy import deepcopy
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.exceptions import HTTPException
 from pydantic import BaseModel
 
@@ -16,7 +16,10 @@ class Integration(BaseModel):
     data: dict
 
 
-@app.post("/integration_configs/{integration_name}/{integration_id}")
+integration_configs_router = APIRouter(prefix='/integration_configs')
+
+
+@integration_configs_router.post('/{integration_name}/{integration_id}')
 async def post_config(
     integration_name: str,
     integration_id: str,
@@ -31,7 +34,7 @@ async def post_config(
         db[integration.company_id] = company_data
 
 
-@app.delete("/integration_configs/{integration_name}/{integration_id}")
+@integration_configs_router.delete('/{integration_name}/{integration_id}')
 async def delete_config(
     integration_name: str,
     integration_id: str,
@@ -43,10 +46,10 @@ async def delete_config(
                 new_integrations.pop(integration_name)
                 db[company_id] = new_integrations
                 return
-    raise HTTPException(status_code=404, detail="Item not found")
+    raise HTTPException(status_code=404, detail='Item not found')
 
 
-@app.get("/integration_configs/{integration_name}/{integration_id}")
+@integration_configs_router.get('/{integration_name}/{integration_id}')
 async def retrive_config(
     integration_name: str,
     integration_id: str,
@@ -56,8 +59,10 @@ async def retrive_config(
             if (integration := integrations.get(integration_name)) and integration['integration_id'] == integration_id:
                 return {'company_id': company_id, **integration}
 
-    raise HTTPException(status_code=404, detail="Item not found")
+    raise HTTPException(status_code=404, detail='Item not found')
 
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", port=8000, log_level="info")
+app.include_router(integration_configs_router)
+
+if __name__ == '__main__':
+    uvicorn.run('main:app', port=8000, log_level='info')
